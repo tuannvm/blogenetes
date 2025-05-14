@@ -1,12 +1,6 @@
 ---
-title: "More predictable benchmarking with testing.B.Loop"
-date: "2025-05-14T16:19:27-07:00"
+title: "A hotline between the Pentagon and DCA airport hasn't worked since 2022, FAA says"
+date: "2025-05-14T16:38:58-07:00"
 ---
 
-The article discusses the introduction of `testing.B.Loop` in Go 1.24 as a new way to write benchmarks. It highlights the benefits of using `testing.B.Loop` over the traditional `b.N` benchmark loop, such as preventing unwanted compiler optimizations, excluding setup/cleanup code from timing, and avoiding accidental dependencies on iteration counts.
-
-`testing.B.Loop` simplifies benchmarking by integrating timer management for setup/cleanup code and preventing dead code elimination within the loop. It also offers a one-shot ramp-up approach for more efficient benchmarking.
-
-The article explains common pitfalls of the old benchmark loop structure and demonstrates how `testing.B.Loop` helps address these issues. It also provides guidelines on when to use `testing.B.Loop` and acknowledges contributors who provided feedback on the feature.
-
-Overall, `testing.B.Loop` provides a faster, more accurate, and intuitive way to write benchmarks in Go.
+An FAA official states that the hotline connecting air traffic control at Washington's DCA with the Pentagon has not been functional since 2022. This malfunction occurred following a collision between an Army helicopter and a passenger jet at the Pentagon in January. The image provided shows a Black Hawk helicopter approaching for landing at the Pentagon in July 2024.
