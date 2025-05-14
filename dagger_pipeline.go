@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
-		"github.com/dagger/dagger-go"
+	"dagger.io/dagger"
 )
 
 func main() {
@@ -16,39 +17,66 @@ func main() {
 	}
 	defer client.Close()
 
-	// 1) Clone your blog repo
-	blog := client.
-		Git("https://github.com/your-username/your-blog.git").
-		Branch("main").
-		Tree()
+	// Clone blog repo
+	blog := client.Git("https://github.com/your-username/your-blog.git").Branch("main").Tree()
 
-	// 2) Spin up a Go container to fetch & summarise
+	// Prepare secrets
+	openAISecret := client.SetSecret("OPENAI_API_KEY", os.Getenv("OPENAI_API_KEY"))
+	gitSecret := client.SetSecret("GIT_TOKEN", os.Getenv("GIT_TOKEN"))
+
+	// Fetch & summarise
+	scriptsDir := client.Host().Directory("scripts")
+	
+	// First test Go environment
+	tester := client.Container().
+		From("golang:1.20").
+		WithMountedDirectory("/scripts", scriptsDir).
+		WithExec([]string{"/bin/sh", "-c", "/scripts/test_go_env.sh"})
+		
+	// Get stdout for debugging
+	testOutput, err := tester.Stdout(ctx)
+	if err != nil {
+		log.Printf("Go environment test failed: %v", err)
+	} else {
+		log.Printf("Go environment test result: %s", testOutput)
+	}
+	
 	fetcher := client.Container().
 		From("golang:1.20").
 		WithMountedCache("/go/pkg/mod", client.CacheVolume("go-mod")).
-		        WithMountedFile("/scripts/fetch_and_summary.go", client.Host().File("scripts/fetch_and_summary.go")).
-		        WithMountedFile("/scripts/go.mod", client.Host().File("scripts/go.mod")).
+		WithMountedDirectory("/scripts", scriptsDir).
 		WithEnvVariable("RSS_URL", "https://some-blog.com/rss").
-		WithSecretVariable("OPENAI_API_KEY", client.Host().Secret("OPENAI_API_KEY")).
-		        WithExec([]string{"bash", "-lc", "cd /scripts && go mod tidy"}).
-		        WithExec([]string{"bash", "-lc", "cd /scripts && go run fetch_and_summary.go"}).
-		WithFile("/output/new_post.md")
+		WithEnvVariable("PATH", "/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin").
+		WithEnvVariable("GOGC", "off").
+		WithEnvVariable("GOPATH", "/go").
+		WithSecretVariable("OPENAI_API_KEY", openAISecret).
+		WithExec([]string{"/bin/sh", "-c", "mkdir -p /output && cd /scripts && which go && go mod tidy && go run fetch_and_summary.go"})
 
-	// 3) Inject the generated markdown into your blog tree
-	updated := blog.WithNewFile("/content/new_post.md", fetcher.File("/output/new_post.md"))
+	fetchFile := fetcher.File("/output/new_post.md")
 
-	// 4) Commit & push back to repo
-	gitToken := client.Host().Secret("GIT_TOKEN")
-	runner := updated.
+	// Read contents and inject generated markdown
+	contents, err := fetchFile.Contents(ctx)
+	if err != nil {
+		log.Fatalf("failed to read generated summary file: %v", err)
+	}
+	updated := blog.WithNewFile("content/new_post.md", contents)
+
+	// Commit & push via git container
+	gitContainer := client.Container().
+		From("alpine/git:latest").
+		WithDirectory("/repo", updated).
+		WithWorkdir("/repo").
+		WithSecretVariable("GIT_TOKEN", gitSecret).
 		WithExec([]string{"git", "config", "user.name", "dagger-bot"}).
 		WithExec([]string{"git", "config", "user.email", "bot@example.com"}).
 		WithExec([]string{"git", "add", "."}).
 		WithExec([]string{"git", "commit", "-m", "🔖 Add summary of latest external blog post"}).
-		WithSecretVariable("GIT_TOKEN", gitToken).
-		WithExec([]string{"git", "push", fmt.Sprintf("https://x-access-token:%s@github.com/your-username/your-blog.git", gitToken), "main"})
+		WithExec([]string{"git", "push", fmt.Sprintf("https://x-access-token:%s@github.com/your-username/your-blog.git", gitSecret), "main"})
 
-	if exit, err := runner.ExitCode(ctx); err != nil || exit != 0 {
-		log.Fatalf("push failed (exit=%d): %v", exit, err)
+	// Actually run the last git push command and fail on error
+	_, err = gitContainer.Sync(ctx)
+	if err != nil {
+		log.Fatalf("git push failed: %v", err)
 	}
 
 	fmt.Println("✅ Pipeline completed successfully")

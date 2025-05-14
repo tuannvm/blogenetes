@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -11,26 +11,29 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mmcdole/gofeed"
-	"github.com/openai/openai-go"
+	"github.com/sashabaranov/go-openai"
 )
 
 func main() {
+	fmt.Println("Starting blog fetcher and summarizer...")
+	
 	rssURL := os.Getenv("RSS_URL")
 	apiKey := os.Getenv("OPENAI_API_KEY")
+	
+	fmt.Printf("RSS_URL is set: %v\n", rssURL != "")
+	fmt.Printf("OPENAI_API_KEY is set: %v\n", apiKey != "")
+	
 	if rssURL == "" || apiKey == "" {
-		fmt.Fprintln(os.Stderr, "RSS_URL or OPENAI_API_KEY not set")
-		os.Exit(1)
+		log.Fatal("environment variables RSS_URL and OPENAI_API_KEY must be set")
 	}
 
 	fp := gofeed.NewParser()
 	feed, err := fp.ParseURL(rssURL)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to parse RSS feed: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("failed to parse RSS feed: %v", err)
 	}
 	if len(feed.Items) == 0 {
-		fmt.Fprintln(os.Stderr, "no items found in RSS feed")
-		os.Exit(1)
+		log.Fatal("no items found in RSS feed")
 	}
 	entry := feed.Items[0]
 
@@ -38,17 +41,18 @@ func main() {
 	slug = strings.ReplaceAll(slug, " ", "-")
 	slug = strings.ReplaceAll(slug, "/", "-")
 
-	resp, err := http.Get(entry.Link)
+	httpResp, err := http.Get(entry.Link)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to fetch article: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("failed to fetch article: %v", err)
 	}
-	defer resp.Body.Close()
+	if httpResp.StatusCode != http.StatusOK {
+		log.Fatalf("failed to fetch article: status %s", httpResp.Status)
+	}
+	defer httpResp.Body.Close()
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	doc, err := goquery.NewDocumentFromReader(httpResp.Body)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to parse HTML: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("failed to parse HTML: %v", err)
 	}
 
 	var builder strings.Builder
@@ -62,31 +66,44 @@ func main() {
 
 	client := openai.NewClient(apiKey)
 	prompt := fmt.Sprintf("Summarise the following blog post in 3–5 bullet points:\n\n%s", builder.String())
-	resp, err := client.CreateChatCompletion(context.Background(), &openai.ChatCompletionRequest{
-		Model:       "gpt-3.5-turbo",
-		Messages:    []openai.ChatCompletionMessage{{Role: "user", Content: prompt}},
-		MaxTokens:   200,
-		Temperature: 0.7,
-	})
+	resp, err := client.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: openai.GPT3Dot5Turbo,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: prompt,
+				},
+			},
+			MaxTokens:   200,
+			Temperature: 0.7,
+		},
+	)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "OpenAI API error: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("OpenAI API error: %v", err)
 	}
 	summary := strings.TrimSpace(resp.Choices[0].Message.Content)
 
 	date := time.Now().UTC().Format("2006-01-02")
 	outDir := "/output"
+	fmt.Printf("Creating output directory: %s\n", outDir)
 	if err := os.MkdirAll(outDir, 0755); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to create output dir: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("failed to create output dir: %v", err)
 	}
-	filename := fmt.Sprintf("%s/%s-%s.md", outDir, date, slug)
+	filename := fmt.Sprintf("%s/new_post.md", outDir)
+	fmt.Printf("Will write to file: %s\n", filename)
 	md := fmt.Sprintf("---\ntitle: \"Summary: %s\"\ndate: %s\n---\n\n%s\n", entry.Title, date, summary)
 
-	if err := ioutil.WriteFile(filename, []byte(md), 0644); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to write file: %v\n", err)
-		os.Exit(1)
+	if err := os.WriteFile(filename, []byte(md), 0644); err != nil {
+		log.Fatalf("failed to write file: %v", err)
 	}
 
-	fmt.Println("Wrote summary to", filename)
+	// Verify file was written
+	if _, err := os.Stat(filename); err != nil {
+		log.Fatalf("failed to verify file exists after writing: %v", err)
+	}
+
+	fmt.Println("Successfully wrote summary to", filename)
+	fmt.Println("Process completed successfully!")
 }
