@@ -2,6 +2,7 @@ package dagger
 
 import (
 	"context"
+
 	"github.com/mmcdole/gofeed"
 )
 
@@ -13,12 +14,16 @@ func NewAgentRSS() *AgentRSS {
 	return &AgentRSS{}
 }
 
-// FetchArticles fetches and parses articles from the given RSS URL.
-func (a *AgentRSS) FetchArticles(ctx context.Context, rssURL string) ([]*gofeed.Item, error) {
+// FetchArticles fetches and parses articles from the given RSS URLs.
+func (a *AgentRSS) FetchArticles(ctx context.Context, rssURLs []string) ([]*gofeed.Item, error) {
 	parser := gofeed.NewParser()
-	feed, err := parser.ParseURL(rssURL)
-	if err != nil {
-		return nil, err
+	var allItems []*gofeed.Item
+	for _, url := range rssURLs {
+		feed, err := parser.ParseURL(url)
+		if err != nil {
+			return nil, err
+		}
+		allItems = append(allItems, feed.Items...)
 	}
-	return feed.Items, nil
+	return allItems, nil
 }

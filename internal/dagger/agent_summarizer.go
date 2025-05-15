@@ -2,8 +2,9 @@ package dagger
 
 import (
 	"context"
-	"fmt"
+	"os"
 
+	dagger "dagger.io/dagger"
 	go_openai "github.com/sashabaranov/go-openai"
 )
 
@@ -18,19 +19,26 @@ func NewAgentSummarizer(client *go_openai.Client) *AgentSummarizer {
 }
 
 // Summarize generates a summary for the given article text.
-func (a *AgentSummarizer) Summarize(ctx context.Context, article string) (string, error) {
-	resp, err := a.Client.CreateChatCompletion(ctx, go_openai.ChatCompletionRequest{
-		Model:    go_openai.GPT3Dot5Turbo,
-		Messages: []go_openai.ChatCompletionMessage{
-			{Role: go_openai.ChatMessageRoleSystem, Content: "You are a helpful assistant that summarizes articles."},
-			{Role: go_openai.ChatMessageRoleUser, Content: article},
-		},
-	})
+func (a *AgentSummarizer) Summarize(ctx context.Context, client *dagger.Client, article string) (string, error) {
+	// Write the article to a file in a Dagger directory
+	dir := client.Directory().WithNewFile("article.txt", article)
+
+	// Mount the source code and run a Go summarizer binary inside a container
+	openaiSecret := client.SetSecret("OPENAI_API_KEY", os.Getenv("OPENAI_API_KEY"))
+container := client.Container().
+		From("golang:1.24").
+		WithMountedDirectory("/src", client.Host().Directory("."), dagger.ContainerWithMountedDirectoryOpts{Owner: "root"}).
+		WithMountedDirectory("/work", dir).
+		WithWorkdir("/src/internal/summarizer").
+		WithExec([]string{"go", "build", "-o", "/tmp/summarizer", "main.go"}).
+		WithWorkdir("/work").
+		WithSecretVariable("OPENAI_API_KEY", openaiSecret).
+		WithExec([]string{"/tmp/summarizer", "article.txt"})
+
+	// Capture the output (summary)
+	summary, err := container.Stdout(ctx)
 	if err != nil {
 		return "", err
 	}
-	if len(resp.Choices) == 0 {
-		return "", fmt.Errorf("no completion choices returned")
-	}
-	return resp.Choices[0].Message.Content, nil
+	return summary, nil
 }
