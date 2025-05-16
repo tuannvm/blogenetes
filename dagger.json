@@ -2,8 +2,12 @@
   "name": "blogenetes",
   "engineVersion": "v0.18.8",
   "sdk": {
-    "source": "go",
-    "module": "github.com/tuannvm/blogenetes"
+    "source": "go"
   },
-  "source": "."
+  "dependencies": [
+    "./rss",
+    "./summarizer",
+    "./markdown",
+    "./github-publisher"
+  ]
 }

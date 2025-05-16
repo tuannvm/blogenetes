@@ -4,7 +4,6 @@ go 1.24.3
 
 require (
 	dagger.io/dagger v0.18.8
-	github.com/mmcdole/gofeed v1.3.0
 	github.com/99designs/gqlgen v0.17.73
 	github.com/Khan/genqlient v0.8.0
 	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8
