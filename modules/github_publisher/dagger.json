@@ -4,8 +4,5 @@
   "sdk": {
     "source": "go"
   },
-  "source": ".",
-  "dependencies": [
-    "dagger.io/dagger"
-  ]
+  "source": "."
 }
