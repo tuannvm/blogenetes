@@ -12,27 +12,33 @@ import (
 // Alias the internal Dagger client type for clarity
 type DaggerClient = dagger.Client
 
-// RSSFeed aliases gofeed.Feed for better semantics
-type RSSFeed = gofeed.Feed
+// RSSFeed is a minimal wrapper for gofeed.Feed that's compatible with Dagger
+type RSSFeed struct {
+	Title       string    `json:"title"`
+	Description string    `json:"description,omitempty"`
+	Link        string    `json:"link,omitempty"`
+	Items       []RSSItem `json:"items,omitempty"`
+}
 
-// RSSItem aliases gofeed.Item for better semantics
-type RSSItem = gofeed.Item
+// RSSItem is a minimal wrapper for gofeed.Item that's compatible with Dagger
+type RSSItem struct {
+	Title       string `json:"title"`
+	Description string `json:"description,omitempty"`
+	Link        string `json:"link,omitempty"`
+	Content     string `json:"content,omitempty"`
+	Published   string `json:"published,omitempty"`
+}
 
 type RSS struct {
 	dag    *DaggerClient
 	parser *gofeed.Parser
 }
 
-// New creates a new RSS fetcher with the given Dagger client
-func New(ctx context.Context, client *DaggerClient) (*RSS, error) {
-	if client == nil {
-		return nil, fmt.Errorf("dagger client cannot be nil")
-	}
-
+func NewRSS(dag *dagger.Client) *RSS {
 	return &RSS{
-		dag:    client,
+		dag:    dag,
 		parser: gofeed.NewParser(),
-	}, nil
+	}
 }
 
 // Fetch fetches and parses an RSS/Atom feed from the given URL
@@ -49,8 +55,24 @@ func (r *RSS) Fetch(ctx context.Context, url string) (*RSSFeed, error) {
 
 	log.Printf("Processing %d items from feed: %s", len(feed.Items), feed.Title)
 
-	// Return the parsed feed directly
-	result := feed
+	// Convert to our minimal wrapper
+	result := &RSSFeed{
+		Title:       feed.Title,
+		Description: feed.Description,
+		Link:        feed.Link,
+		Items:       make([]RSSItem, 0, len(feed.Items)),
+	}
+
+	// Convert items to our minimal wrapper
+	for _, item := range feed.Items {
+		result.Items = append(result.Items, RSSItem{
+			Title:       item.Title,
+			Description: item.Description,
+			Link:        item.Link,
+			Content:     item.Content,
+			Published:   item.Published,
+		})
+	}
 
 	return result, nil
 }

@@ -26,11 +26,8 @@ type Markdown struct {
 	dag *dagger.Client
 }
 
-// New creates a new Markdown instance with the given Dagger client
-func New(client *dagger.Client) *Markdown {
-	return &Markdown{
-		dag: client,
-	}
+func NewMarkdown(dag *dagger.Client) *Markdown {
+	return &Markdown{dag: dag}
 }
 
 // GenerateMarkdown creates a markdown document from the summary
