@@ -12,6 +12,7 @@ import (
 )
 
 // GithubPublisher is the main module type that provides GitHub publishing functionality
+// GithubPublisher represents a client for publishing content to GitHub
 type GithubPublisher struct {
 	dag *dagger.Client
 }
@@ -26,9 +27,11 @@ type GithubPublisher struct {
 // - branch: The branch to push to (defaults to "main")
 // - path: The path in the repository to publish to
 // - message: The commit message
-// - token: The GitHub token with repository write access
+// - githubToken: The GitHub token with repository write access
 //
-// Returns a container that performs the git operations
+// Returns:
+// - *dagger.Container: The container used for Git operations
+// - error: Any error that occurred
 func (m *GithubPublisher) Publish(
 	ctx context.Context,
 	content *dagger.Directory,
@@ -37,14 +40,14 @@ func (m *GithubPublisher) Publish(
 	branch string,
 	path string,
 	message string,
-	token *dagger.Secret,
+	githubToken *dagger.Secret,
 ) (*dagger.Container, error) {
 	if branch == "" {
 		branch = "main"
 	}
 
 	// Get the GitHub token
-	tokenValue, err := token.Plaintext(ctx)
+	tokenValue, err := githubToken.Plaintext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read GitHub token: %w", err)
 	}
@@ -86,6 +89,12 @@ func (m *GithubPublisher) Publish(
 }
 
 // NewGithubPublisher creates a new instance of the GithubPublisher
+//
+// Parameters:
+// - dag: Dagger client instance
+//
+// Returns:
+// - *GithubPublisher: A new GithubPublisher instance
 func NewGithubPublisher(dag *dagger.Client) *GithubPublisher {
 	return &GithubPublisher{
 		dag: dag,
