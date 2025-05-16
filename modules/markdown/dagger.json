@@ -1,0 +1,5 @@
+{
+  "name": "markdown",
+  "sdk": "go",
+  "source": "."
+}

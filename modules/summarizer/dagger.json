@@ -1,0 +1,5 @@
+{
+  "name": "summarizer",
+  "sdk": "go",
+  "source": "."
+}

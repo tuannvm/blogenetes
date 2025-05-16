@@ -5,67 +5,48 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"strings"
-
-	"github.com/tuannvm/blogenetes/internal/dagger"
 )
 
 func main() {
-	ctx := context.Background()
-
-	openAIClient := dagger.SetupOpenAIClient()
-	daggerClient, err := dagger.SetupDaggerClient()
-	if err != nil {
-		log.Fatalf("failed to connect to Dagger: %v", err)
-	}
-	defer daggerClient.Close()
-
-	rssURL := flag.String("rss", "https://www.npr.org/rss/rss.php?id=1001", "Comma-separated RSS feed URLs (default top 10 sources)")
-	owner := flag.String("owner", "", "GitHub owner")
-	repo := flag.String("repo", "", "GitHub repository name")
+	// Parse command line flags
+	rssURL := flag.String("rss", "https://www.npr.org/rss/rss.php?id=1001", "RSS feed URL")
+	owner := flag.String("owner", "your-org", "GitHub owner")
+	repo := flag.String("repo", "your-repo", "GitHub repository name")
 	branch := flag.String("branch", "main", "GitHub branch to commit to")
-	path := flag.String("path", "post.md", "Path in the repo for the markdown file")
-	message := flag.String("message", "Add new post via agent", "Commit message")
+	path := flag.String("path", "posts/post.md", "Path to save the post")
+	message := flag.String("message", "New post via agent", "Commit message")
 	flag.Parse()
 
 	if *rssURL == "" || *owner == "" || *repo == "" {
 		log.Fatal("flags --rss, --owner, and --repo are required")
 	}
 
-	// Initialize agents
-	rssAgent := dagger.NewAgentRSS()
-	summarizer := dagger.NewAgentSummarizer(openAIClient)
-	markdownAgent := dagger.NewAgentMarkdown()
-	githubAgent := dagger.NewAgentGitHub()
+	// Create a new instance of our Blogenetes module
+	blog := New()
 
-	// Fetch articles
-	rssURLs := strings.Split(*rssURL, ",")
-	items, err := rssAgent.FetchArticles(ctx, rssURLs)
+	// Execute the pipeline
+	ctx := context.Background()
+	container, err := blog.ProcessRSSFeed(
+		ctx,
+		*rssURL,
+		*owner,
+		*repo,
+		*branch,
+		*path,
+		*message,
+	)
+
 	if err != nil {
-		log.Fatalf("failed to fetch articles: %v", err)
+		log.Fatalf("pipeline failed: %v", err)
 	}
-	if len(items) == 0 {
-		log.Fatal("no articles found at RSS feed")
-	}
-	latest := items[0]
 
-	// Summarize (Dagger container step)
-	summary, err := summarizer.Summarize(ctx, daggerClient, latest.Content)
+	// Get the output
+	output, err := container.Stdout(ctx)
 	if err != nil {
-		log.Fatalf("failed to summarize article: %v", err)
+		log.Fatalf("failed to get container output: %v", err)
 	}
 
-	// Convert to Markdown
-	mdBytes, err := markdownAgent.ToMarkdown(ctx, latest.Title, summary)
-	if err != nil {
-		log.Fatalf("failed to generate markdown: %v", err)
-	}
-
-	// Commit to GitHub
-	err = githubAgent.CommitToRepo(ctx, *owner, *repo, *branch, *path, string(mdBytes), *message)
-	if err != nil {
-		log.Fatalf("failed to commit to repo: %v", err)
-	}
-
-	fmt.Println("Successfully published markdown to GitHub")
+	fmt.Println("Pipeline execution completed successfully!")
+	fmt.Println("Output:")
+	fmt.Println(output)
 }

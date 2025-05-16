@@ -1,8 +1,9 @@
 {
-  "name": "multiagent",
-  "engineVersion": "v0.18.7",
+  "name": "blogenetes",
+  "engineVersion": "v0.18.8",
   "sdk": {
-    "source": "go"
+    "source": "go",
+    "module": "github.com/tuannvm/blogenetes"
   },
-  "source": ".dagger"
+  "source": "."
 }
