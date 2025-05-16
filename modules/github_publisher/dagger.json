@@ -1,4 +1,8 @@
 {
-  "name": "github.com/tuannvm/blogenetes/modules/github_publisher",
-  "sdk": "go"
+  "name": "github-publisher",
+  "engineVersion": "v0.18.8",
+  "sdk": {
+    "source": "go"
+  },
+  "source": ".dagger"
 }
