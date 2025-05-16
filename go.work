@@ -4,4 +4,5 @@ use (
 	./rss
 	./github-publisher
 	./markdown
+	./summarizer
 )
