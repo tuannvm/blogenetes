@@ -1,0 +1,13 @@
+{
+  "name": "blogenetes",
+  "engineVersion": "v0.18.8",
+  "sdk": {
+    "source": "go"
+  },
+  "dependencies": [
+    "./rss",
+    "./summarizer",
+    "./markdown",
+    "./github-publisher"
+  ]
+}
