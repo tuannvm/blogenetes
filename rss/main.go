@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/mmcdole/gofeed"
 	"dagger/rss/internal/dagger"
+
+	"github.com/mmcdole/gofeed"
 )
 
 // Alias the internal Dagger client type for clarity
@@ -30,14 +31,12 @@ type RSSItem struct {
 }
 
 type RSS struct {
-	dag    *DaggerClient
-	parser *gofeed.Parser
+	dag *DaggerClient
 }
 
 func NewRSS(dag *dagger.Client) *RSS {
 	return &RSS{
-		dag:    dag,
-		parser: gofeed.NewParser(),
+		dag: dag,
 	}
 }
 
@@ -47,8 +46,11 @@ func (r *RSS) Fetch(ctx context.Context, url string) (*RSSFeed, error) {
 	// Log the start of the fetch operation
 	log.Printf("Fetching RSS feed from: %s", url)
 
+	// Create a new parser for each request
+	parser := gofeed.NewParser()
+
 	// Parse the feed directly from URL
-	feed, err := r.parser.ParseURL(url)
+	feed, err := parser.ParseURL(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse feed: %w", err)
 	}
