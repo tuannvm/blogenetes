@@ -1,17 +1,17 @@
-package blogenetes
+package main
 
 import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 
 	"dagger.io/dagger"
-	"github.com/tuannvm/blogenetes/pkg/pipeline"
+	"github.com/tuannvm/blogenetes/pipeline"
 )
 
-// Execute runs the blogenetes command
-func Execute() error {
+func main() {
 	// Parse command line flags
 	rssURL := flag.String("rss", "https://www.npr.org/rss/rss.php?id=1001", "RSS feed URL")
 	owner := flag.String("owner", "your-org", "GitHub owner")
@@ -39,10 +39,13 @@ func Execute() error {
 	defer client.Close()
 
 	// Create and run the pipeline
-	p := pipeline.NewPipeline(client)
+	p, err := pipeline.NewPipeline(client)
+	if err != nil {
+		log.Fatalf("Failed to create pipeline: %v", err)
+	}
 
 	// Run the full pipeline
-	fmt.Println("🚀 Starting Blogenetes pipeline...")
+	log.Println("🚀 Starting Blogenetes pipeline...")
 	container, err := p.Run(
 		ctx,
 		*rssURL,
@@ -66,5 +69,9 @@ func Execute() error {
 	fmt.Println("\n✅ Pipeline execution completed successfully!")
 	fmt.Println("📝 Output:")
 	fmt.Println(output)
-	return nil
+	if err != nil {
+		log.Fatalf("Pipeline failed: %v", err)
+	}
+
+	log.Printf("✅ Successfully published to %s/%s/%s\n", *owner, *repo, *path)
 }
