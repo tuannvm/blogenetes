@@ -1,73 +1,68 @@
-package main
+package rss
 
 import (
 	"context"
-	"encoding/xml"
 	"fmt"
-	"io"
-	"net/http"
+	"time"
 
+	"github.com/mmcdole/gofeed"
 	"github.com/tuannvm/blogenetes/modules/shared"
 )
 
-type RSS struct{}
+type RSS struct {
+	parser *gofeed.Parser
+}
 
-// Fetch fetches and parses an RSS feed from the given URL
+// New creates a new RSS fetcher
+func New() *RSS {
+	return &RSS{
+		parser: gofeed.NewParser(),
+	}
+}
+
+// Fetch fetches and parses an RSS/Atom feed from the given URL
 func (r *RSS) Fetch(ctx context.Context, url string) (*shared.RSSFeed, error) {
-	// Fetch the RSS feed
-	resp, err := http.Get(url)
+	// Parse the feed directly from URL
+	feed, err := r.parser.ParseURL(url)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch RSS feed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Read the response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Parse the RSS feed
-	var rssFeed struct {
-		Channel struct {
-			Title       string `xml:"title"`
-			Link        string `xml:"link"`
-			Description string `xml:"description"`
-			Items       []struct {
-				Title       string `xml:"title"`
-				Link        string `xml:"link"`
-				Description string `xml:"description"`
-				Content     string `xml:"encoded"`
-				Published   string `xml:"pubDate"`
-			} `xml:"item"`
-		} `xml:"channel"`
-	}
-
-	if err := xml.Unmarshal(body, &rssFeed); err != nil {
-		return nil, fmt.Errorf("failed to parse RSS feed: %w", err)
+		return nil, fmt.Errorf("failed to parse feed: %w", err)
 	}
 
 	// Convert to our shared types
-	feed := &shared.RSSFeed{
-		Title:       rssFeed.Channel.Title,
-		Link:        rssFeed.Channel.Link,
-		Description: rssFeed.Channel.Description,
+	result := &shared.RSSFeed{
+		Title:       feed.Title,
+		Link:        feed.Link,
+		Description: feed.Description,
+		Items:       make([]shared.RSSItem, 0, len(feed.Items)),
 	}
 
-	for _, item := range rssFeed.Channel.Items {
-		feed.Items = append(feed.Items, shared.RSSItem{
+	// Convert feed items
+	for _, item := range feed.Items {
+		// Handle published date
+		var pubDate time.Time
+		switch {
+		case item.PublishedParsed != nil:
+			pubDate = *item.PublishedParsed
+		case item.UpdatedParsed != nil:
+			pubDate = *item.UpdatedParsed
+		default:
+			pubDate = time.Now()
+		}
+
+		// Use content if available, fallback to description
+		content := item.Content
+		if content == "" {
+			content = item.Description
+		}
+
+		result.Items = append(result.Items, shared.RSSItem{
 			Title:       item.Title,
 			Link:        item.Link,
 			Description: item.Description,
-			Content:     item.Content,
-			Published:   item.Published,
+			Content:     content,
+			Published:   pubDate,
 		})
 	}
 
-	return feed, nil
-}
-
-// ProcessRSS is the Dagger function that will be called from the pipeline
-func (r *RSS) ProcessRSS(ctx context.Context, url string) (*shared.RSSFeed, error) {
-	return r.Fetch(ctx, url)
+	return result, nil
 }

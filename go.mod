@@ -2,18 +2,27 @@ module github.com/tuannvm/blogenetes
 
 go 1.24
 
-require dagger.io/dagger v0.18.8
+require (
+	dagger.io/dagger v0.18.8
+	github.com/mmcdole/gofeed v1.3.0
+)
 
 require (
 	github.com/99designs/gqlgen v0.17.73 // indirect
 	github.com/Khan/genqlient v0.8.0 // indirect
+	github.com/PuerkitoBio/goquery v1.10.3 // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
+	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.23.0 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
+	github.com/mmcdole/goxpp v1.1.1-0.20240225020742-a0c311522b23 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/sosodev/duration v1.3.1 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.26 // indirect

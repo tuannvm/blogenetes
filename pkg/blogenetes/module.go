@@ -1,5 +1,4 @@
-// Blogenetes is a modular blog generation and publishing pipeline
-package main
+package blogenetes
 
 import (
 	"context"

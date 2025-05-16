@@ -1,5 +1,7 @@
 package shared
 
+import "time"
+
 // RSSFeed represents the structure of an RSS feed
 type RSSFeed struct {
 	Title       string
@@ -10,11 +12,11 @@ type RSSFeed struct {
 
 // RSSItem represents a single item in an RSS feed
 type RSSItem struct {
-	Title       string
-	Link        string
-	Description string
-	Content     string
-	Published   string
+	Title       string    `json:"title"`
+	Link        string    `json:"link"`
+	Description string    `json:"description"`
+	Content     string    `json:"content"`
+	Published   time.Time `json:"published"`
 }
 
 // Summary represents the summarized content
