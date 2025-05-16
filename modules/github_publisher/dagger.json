@@ -1,0 +1,5 @@
+{
+  "name": "github.com/tuannvm/daggerverse/github-publisher",
+  "sdk": "go",
+  "entrypoints": ["."]
+}
