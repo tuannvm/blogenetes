@@ -1,0 +1,7 @@
+{
+  "name": "rss",
+  "engineVersion": "v0.18.8",
+  "sdk": {
+    "source": "go"
+  }
+}

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/mmcdole/gofeed"
-	"github.com/tuannvm/blogenetes/modules/shared"
 )
 
 type RSS struct {
