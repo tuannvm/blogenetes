@@ -1,5 +1,5 @@
 {
-  "name": "github.com/tuannvm/daggerverse/github-publisher",
+  "name": "github.com/tuannvm/blogenetes/modules/github_publisher",
   "sdk": "go",
   "entrypoints": ["."]
 }
