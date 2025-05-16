@@ -1,6 +1,6 @@
 module github.com/tuannvm/blogenetes
 
-go 1.24
+go 1.24.2
 
 require (
 	dagger.io/dagger v0.18.8
@@ -23,7 +23,6 @@ require (
 	github.com/mmcdole/goxpp v1.1.1-0.20240225020742-a0c311522b23 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/sosodev/duration v1.3.1 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.26 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect

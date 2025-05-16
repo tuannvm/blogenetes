@@ -8,14 +8,10 @@ import (
 	"context"
 	"fmt"
 
-	"dagger.io/dagger"
+	"dagger/github-publisher/internal/dagger"
 )
 
-// GithubPublisher is the main module type that provides GitHub publishing functionality
-// GithubPublisher represents a client for publishing content to GitHub
-type GithubPublisher struct {
-	dag *dagger.Client
-}
+type GithubPublisher struct{}
 
 // Publish commits and pushes content to a GitHub repository
 //
@@ -99,9 +95,4 @@ func NewGithubPublisher(dag *dagger.Client) *GithubPublisher {
 	return &GithubPublisher{
 		dag: dag,
 	}
-}
-
-func main() {
-	// This is a Dagger module, not a standalone program
-	// The main function is required to make it a valid Go program
 }
