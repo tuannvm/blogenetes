@@ -1,4 +1,4 @@
-package main
+package github_publisher
 
 import (
 	"context"

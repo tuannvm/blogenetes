@@ -1,5 +1,4 @@
 {
   "name": "github.com/tuannvm/blogenetes/modules/github_publisher",
-  "sdk": "go",
-  "entrypoints": ["."]
+  "sdk": "go"
 }
