@@ -1,3 +1,6 @@
+// Package main provides a Dagger module for text summarization
+//
+// This module provides functionality to summarize text content
 package main
 
 import (
@@ -22,9 +25,15 @@ type Summarizer struct {
 	dag *dagger.Client
 }
 
-// New creates a new Summarizer with a Dagger client
-func New(client *dagger.Client) *Summarizer {
-	return &Summarizer{dag: client}
+// NewSummarizer creates a new instance of the Summarizer
+//
+// Parameters:
+// - dag: Dagger client instance
+//
+// Returns:
+// - *Summarizer: A new Summarizer instance
+func NewSummarizer(dag *dagger.Client) *Summarizer {
+	return &Summarizer{dag: dag}
 }
 
 // firstN returns the first n characters of a string, or the entire string if it's shorter than n
